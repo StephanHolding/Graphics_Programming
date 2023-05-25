@@ -35,9 +35,39 @@
     <None Include="shaders\vertex.shader">
       <Filter>Resource Files\shaders</Filter>
     </None>
+    <None Include="shaders\skyboxVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\skyboxFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\terrainVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\terrainFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\modelFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\modelVertex.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\starFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\planetFragment.shader">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -46,6 +76,27 @@
       <Filter>Resource Files\textures</Filter>
     </Image>
     <Image Include="textures\boxNormal.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\heightmap.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\heightnormal.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\dirt.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\grass.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\rock.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\sand.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\snow.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
   </ItemGroup>

@@ -8,7 +8,7 @@ in vec3 worldPosition;
 
 uniform sampler2D mainTex;
 uniform sampler2D normalTex;
-uniform vec3 lightPosition;
+uniform vec3 lightDirection;
 uniform vec3 cameraPosition;
 
 void main()
@@ -17,9 +17,6 @@ void main()
 	vec3 normal = texture(normalTex, uv).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
 	normal = TBN * normal;
-
-	//lighting data
-	vec3 lightDirection = normalize(worldPosition - lightPosition);
 
 	//specular data
 	vec3 viewDirection = normalize(worldPosition - cameraPosition);
@@ -30,9 +27,9 @@ void main()
 	float specularValue = pow(max(-dot(reflectionDirection, viewDirection), 0.0), 6);
 
 	//seperate RGB for A
-	vec4 output = vec4(color, 1.0f) * texture(mainTex, uv);
-	output.rgb = output.rgb * min(lightValue + 0.2, 1.0) + specularValue;
+	vec4 shaderOutput = vec4(color, 1.0f) * texture(mainTex, uv);
+	shaderOutput.rgb = shaderOutput.rgb * min(lightValue + 0.2, 1.0) + specularValue;
 
 	//FragColor = vec4(color, 1.0f) * texture(normalTex, uv); //for testing specific textures
-	FragColor = output;
+	FragColor = shaderOutput;
 }

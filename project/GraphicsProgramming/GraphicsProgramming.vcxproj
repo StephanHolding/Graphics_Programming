@@ -142,14 +142,31 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment.shader" />
+    <None Include="shaders\modelFragment.shader" />
+    <None Include="shaders\modelVertex.shader" />
+    <None Include="shaders\planetFragment.shader" />
+    <None Include="shaders\skyboxFragment.shader" />
+    <None Include="shaders\skyboxVertex.shader" />
+    <None Include="shaders\starFragment.shader" />
+    <None Include="shaders\terrainFragment.shader" />
+    <None Include="shaders\terrainVertex.shader" />
     <None Include="shaders\vertex.shader" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mesh.h" />
+    <ClInclude Include="model.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\box.png" />
     <Image Include="textures\boxNormal.png" />
+    <Image Include="textures\dirt.jpg" />
+    <Image Include="textures\grass.png" />
+    <Image Include="textures\heightmap.png" />
+    <Image Include="textures\heightnormal.png" />
+    <Image Include="textures\rock.jpg" />
+    <Image Include="textures\sand.jpg" />
+    <Image Include="textures\snow.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
