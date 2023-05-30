@@ -21,17 +21,24 @@ float lastMouseY;
 bool mousePosInitialized = false;
 float camYaw;
 float camPitch;
+float movementSpeed = 0.1f;
 bool keyValues[1024];
 
 glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0, 0.0, 0.0));
 glm::vec3 cameraPosition = glm::vec3(0, 0.0, -10.0f);
 glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(camYaw), 0));
 
-//box data:
+//skybox geometry data:
+GLuint skyboxVAO;
+GLuint skyboxEBO;
+int skyboxMemorySize;
+int skyboxNumofIndeces;
+
+//small box data:
 GLuint boxVAO;
 GLuint boxEBO;
-int boxSize;
-int numOfIndicesBox;
+int boxMemorySize;
+int boxNumofIndeces;
 
 //terrain data
 GLuint terrainVAO;
@@ -56,10 +63,11 @@ GLuint planetProgram;
 GLuint boxTexture;
 GLuint boxNormalTexture;
 GLuint dirtT, sandT, grassT, rockT, snowT;
-GLuint skyboxCubemap;
+GLuint starsCubemap;
 GLuint dayT, nightT, cloudsT, moonT;
 
 //models
+Model* box;
 Model* backpack;
 Model* sphere;
 
@@ -73,15 +81,15 @@ char* ReadFile(const char* filename);
 void CheckShaderCompileStatus(const GLuint& id);
 GLuint LoadTexture(const char* path, int comp = 0);
 GLuint LoadCubemap(std::vector<string> paths, int comp = 0);
-void RenderSkybox();
-void RenderStarbox();
+void RenderSkybox(const GLuint& program);
+void RenderSkybox(const GLuint& program, const GLuint& cubemap);
 void RenderBox();
 void RenderTerrain();
 void CursorPosCallback(GLFWwindow* window, double xPos, double yPos);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-unsigned int GeneratePlane(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
-void RenderModel(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
-void RenderPlanet(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
+unsigned int GenerateTerrain(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
+void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>& textures, bool alpha = false);
+//void RenderPlanet(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 
 int main()
 {
@@ -92,7 +100,8 @@ int main()
 
 
 	CreateShaders();
-	CreateGeometry(boxVAO, boxEBO, boxSize, numOfIndicesBox);
+	CreateGeometry(skyboxVAO, skyboxEBO, skyboxMemorySize, skyboxNumofIndeces);
+	CreateGeometry(boxVAO, boxEBO, boxMemorySize, boxNumofIndeces);
 
 	glViewport(0, 0, WIDTH, HEIGHT);
 
@@ -109,15 +118,15 @@ int main()
 		"textures/space-cubemap/back.png",
 	};
 
-	skyboxCubemap = LoadCubemap(cubemapPaths);
+	starsCubemap = LoadCubemap(cubemapPaths);
 
 	stbi_set_flip_vertically_on_load(true);
 
-	//terrainVAO = GeneratePlane("textures/heightmap.png", heightMapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
+	//terrainVAO = GenerateTerrain("textures/heightmap.png", heightMapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
 	//heightNormalID = LoadTexture("textures/heightnormal.png");
 
-	//boxTexture = LoadTexture("textures/box.png");
-	//boxNormalTexture = LoadTexture("textures/boxNormal.png");
+	boxTexture = LoadTexture("textures/metalBox.jpg");
+	boxNormalTexture = LoadTexture("textures/metalBoxNormal.png");
 
 	/*dirtT = LoadTexture("textures/dirt.jpg");
 	sandT = LoadTexture("textures/sand.jpg");
@@ -130,8 +139,22 @@ int main()
 	cloudsT = LoadTexture("textures/clouds.jpg");
 	moonT = LoadTexture("textures/2k_moon.jpg");
 
+	std::vector<GLuint> earthTextures =
+	{
+		dayT,
+		nightT,
+		cloudsT
+	};
+
+	std::vector<GLuint> metalBoxTextures =
+	{
+		LoadTexture("textures/metalBox.jpg"),
+		LoadTexture("textures/metalBoxNormal.png")
+	};
+
 	//backpack = new Model("models/backpack/backpack.obj");
 	sphere = new Model("models/planets/uv_sphere.obj");
+	box = new Model("models/box/box.obj");
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -145,9 +168,16 @@ int main()
 		glClearColor(0.0, 0.0, 0.0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		/*TODO: WAAROM HEB IK 2 ZONNEN?
+		 *TODO: HOE KAN IK CORRECT EEN MODEL INLADEN MET GOEDE TEX COORDS?
+		 *TODO: WAT MOET JE PRECIES AF HEBBEN VAN DE HUISWERK OPDRACHTEN?
+		*/
+
+		RenderSkybox(skyboxProgram);
 		//RenderBox();
-		RenderStarbox();
-		RenderPlanet(sphere, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), glm::vec3(100, 100, 100));
+		//RenderSkybox(starProgram, starsCubemap);
+		RenderModel(box, glm::vec3(100, 100, 100), glm::vec3(0, 0, 0), glm::vec3(100, 100, 100), simpleProgram, metalBoxTextures);
+		//RenderModel(sphere, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), glm::vec3(100, 100, 100), planetProgram, earthTextures);
 		//RenderTerrain();
 		//RenderModel(backpack, glm::vec3(100, 100, 100), glm::vec3(0, 0, 0), glm::vec3(10, 10, 10));
 
@@ -298,61 +328,39 @@ void CreateGeometry(GLuint& vao, GLuint& ebo, int& size, int& numOfindices)
 	numOfindices = sizeof(indices) / sizeof(int);
 }
 
-void RenderSkybox()
+void RenderSkybox(const GLuint& program)
 {
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH);
 	glDisable(GL_DEPTH_TEST);
 
-	glUseProgram(skyboxProgram);
+	glUseProgram(program);
 
 	glm::mat4 skyboxWorldMatrix = glm::mat4(1.0f);
 	skyboxWorldMatrix = glm::translate(skyboxWorldMatrix, cameraPosition);
 	skyboxWorldMatrix = glm::scale(skyboxWorldMatrix, glm::vec3(10, 10, 10));
 
-	glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "world"), 1, GL_FALSE, glm::value_ptr(skyboxWorldMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "world"), 1, GL_FALSE, glm::value_ptr(skyboxWorldMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-	glUniform3fv(glGetUniformLocation(skyboxProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
-	glUniform3fv(glGetUniformLocation(skyboxProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	glUniform3fv(glGetUniformLocation(program, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(program, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
-	glBindVertexArray(boxVAO);
-	glDrawElements(GL_TRIANGLES, numOfIndicesBox, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(skyboxVAO);
+	glDrawElements(GL_TRIANGLES, skyboxNumofIndeces, GL_UNSIGNED_INT, 0);
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH);
 	glEnable(GL_DEPTH_TEST);
 }
 
-void RenderStarbox()
+void RenderSkybox(const GLuint& program, const GLuint& cubemap)
 {
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH);
-	glDisable(GL_DEPTH_TEST);
-
-	glUseProgram(starProgram);
-
-	glm::mat4 skyboxWorldMatrix = glm::mat4(1.0f);
-	skyboxWorldMatrix = glm::translate(skyboxWorldMatrix, cameraPosition);
-	skyboxWorldMatrix = glm::scale(skyboxWorldMatrix, glm::vec3(10, 10, 10));
-
-	glUniformMatrix4fv(glGetUniformLocation(starProgram, "world"), 1, GL_FALSE, glm::value_ptr(skyboxWorldMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(starProgram, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(starProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-	glUniform3fv(glGetUniformLocation(starProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
-	glUniform3fv(glGetUniformLocation(starProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	RenderSkybox(program);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxCubemap);
-
-	glBindVertexArray(boxVAO);
-	glDrawElements(GL_TRIANGLES, numOfIndicesBox, GL_UNSIGNED_INT, 0);
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH);
-	glEnable(GL_DEPTH_TEST);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 }
 
 void RenderBox()
@@ -360,8 +368,10 @@ void RenderBox()
 	//set values of matrices
 	glm::mat4 boxWorldMatrix = glm::mat4(1.0f);
 	boxWorldMatrix = glm::rotate(boxWorldMatrix, glm::radians(45.0f), glm::vec3(0, 1, 0));
-	boxWorldMatrix = glm::scale(boxWorldMatrix, glm::vec3(1, 1, 1));
+	boxWorldMatrix = glm::scale(boxWorldMatrix, glm::vec3(10, 10, 10));
 	boxWorldMatrix = glm::translate(boxWorldMatrix, glm::vec3(0, 0, 0));
+
+	glUseProgram(simpleProgram);
 
 	glUniformMatrix4fv(glGetUniformLocation(simpleProgram, "world"), 1, GL_FALSE, glm::value_ptr(boxWorldMatrix));
 	glUniformMatrix4fv(glGetUniformLocation(simpleProgram, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
@@ -375,10 +385,9 @@ void RenderBox()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, boxNormalTexture);
 
-
 	//draw elements
 	glBindVertexArray(boxVAO);
-	glDrawElements(GL_TRIANGLES, numOfIndicesBox, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, boxNumofIndeces, GL_UNSIGNED_INT, 0);
 }
 
 void RenderTerrain()
@@ -666,37 +675,39 @@ void ProcessInput(GLFWwindow*& window)
 	}
 
 	bool recalculateViewMatrix = false;
+	glm::vec3 translation;
 
 	if (keyValues[GLFW_KEY_W])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, 1);
+		translation = camQuat * glm::vec3(0, 0, 1);
 		recalculateViewMatrix = true;
 	}
 	if (keyValues[GLFW_KEY_A])
 	{
-		cameraPosition += camQuat * glm::vec3(1, 0, 0);
+		translation = camQuat * glm::vec3(1, 0, 0);
 		recalculateViewMatrix = true;
 	}
 	if (keyValues[GLFW_KEY_S])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, -1);
+		translation = camQuat * glm::vec3(0, 0, -1);
 		recalculateViewMatrix = true;
 	}
 	if (keyValues[GLFW_KEY_D])
 	{
-		cameraPosition += camQuat * glm::vec3(-1, 0, 0);
+		translation = camQuat * glm::vec3(-1, 0, 0);
 		recalculateViewMatrix = true;
 	}
 
 	if (recalculateViewMatrix)
 	{
+		cameraPosition += translation * movementSpeed;
 		const glm::vec3 camForward = camQuat * glm::vec3(0, 0, 1);
 		const glm::vec3 camUp = camQuat * glm::vec3(0, 1, 0);
 		viewMatrix = glm::lookAt(cameraPosition, cameraPosition + camForward, camUp);
 	}
 }
 
-unsigned int GeneratePlane(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID)
+unsigned int GenerateTerrain(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID)
 {
 	int width, height, channels;
 	data = nullptr;
@@ -801,46 +812,59 @@ unsigned int GeneratePlane(const char* heightmap, unsigned char*& data, GLenum f
 	return VAO;
 }
 
-void RenderModel(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
+void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>& textures, bool alpha)
 {
-	glEnable(GL_BLEND);
+	if (alpha)
+	{
+		glEnable(GL_BLEND);
 
-	//alpha blend
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//alpha blend
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//additive blending
-	//glBlendFunc(GL_ONE, GL_ONE);
+		//additive blending
+		//glBlendFunc(GL_ONE, GL_ONE);
 
-	// soft additive blending
-	//glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
+		// soft additive blending
+		//glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
 
-	// MULTIPLY BLENDING
-	//glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		// MULTIPLY BLENDING
+		//glBlendFunc(GL_DST_COLOR, GL_ZERO);
+	}
 
 	glEnable(GL_DEPTH);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glUseProgram(modelProgram);
+	glUseProgram(program);
 
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 	modelMatrix = glm::translate(modelMatrix, position);
 	modelMatrix = modelMatrix * glm::toMat4(glm::quat(rotation));
 	modelMatrix = glm::scale(modelMatrix, scale);
 
-	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "world"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "world"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-	glUniform3fv(glGetUniformLocation(modelProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
-	glUniform3fv(glGetUniformLocation(modelProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	glUniform3fv(glGetUniformLocation(program, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(program, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
-	model->Draw(modelProgram);
+	for (int i = 0; i < textures.size(); i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, textures.at(i));
+	}
 
-	glDisable(GL_BLEND);
+	model->Draw(program);
+
+	if (alpha)
+	{
+		glDisable(GL_BLEND);
+	}
 }
 
+/*
 void RenderPlanet(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
 {
 	glEnable(GL_DEPTH);
@@ -873,4 +897,5 @@ void RenderPlanet(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec
 
 	glDisable(GL_BLEND);
 }
+*/
 

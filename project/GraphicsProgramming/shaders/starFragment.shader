@@ -17,6 +17,8 @@ void main()
 {
 	vec3 sunColor = vec3(0.8, 0.8, 1.0) * 1.5;
 
+	//TODO: WAAROM HEB IK 2 ZONNEN?
+
 	//specular data
 	vec3 viewDirection = normalize(worldPosition.rgb - cameraPosition);
 

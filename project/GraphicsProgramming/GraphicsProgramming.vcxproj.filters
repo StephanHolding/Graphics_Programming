@@ -99,5 +99,11 @@
     <Image Include="textures\snow.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
+    <Image Include="textures\metalBox.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
+    <Image Include="textures\metalBoxNormal.png">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>
