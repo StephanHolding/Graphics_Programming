@@ -29,7 +29,7 @@ double secondsSinceStart;
 
 glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f));
 glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, -10.0f);
-glm::vec3 sunColor = glm::vec3(1.0f, 1.0f, 0.8f);
+glm::vec3 sunColor = glm::vec3(1.0f, 0.5f, 0.8f);
 glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(camYaw), 0));
 
 //skybox geometry data:

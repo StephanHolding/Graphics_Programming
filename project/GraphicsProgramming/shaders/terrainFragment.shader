@@ -58,7 +58,7 @@ void main()
 	vec3 fogColor = lerp3(skyBottomColor * sunColor, skyTopColor * sunColor, max(viewDirection.y, 0.0));
 
 	//seperate RGB for A
-	vec4 shaderOutput = vec4( lerp3(diffuse * min(lightValue + 0.2, 1.0), fogColor, fog), 1.0);
+	vec4 shaderOutput = vec4( lerp3(diffuse * min(lightValue + 0.2, 1.0) * sunColor, fogColor, fog), 1.0);
 
 	FragColor = shaderOutput;
 }

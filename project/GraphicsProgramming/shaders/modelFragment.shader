@@ -14,7 +14,6 @@ uniform sampler2D texture_ao1;
 uniform vec3 cameraPosition;
 uniform vec3 lightDirection;
 uniform vec3 sunColor;
-uniform float offset;
 
 float lerp(float a, float b, float t) 
 {
@@ -53,9 +52,5 @@ void main()
     vec3 fogColor = lerp(skyBottomColor * sunColor, skyTopColor * sunColor, max(viewDir.y, 0.0));
     
     vec4 fragOutput = lerp(diffuse * max(light * ambientOcclusion, 0.2 * ambientOcclusion) * vec4(sunColor, 1.0) + vec4(specular, 0), vec4(fogColor, 1.0), fog);
-
-  //  vec4 textureTest = texture(texture_roughness1, TexCoords);
-
     FragColor = fragOutput;
-  //  FragColor = vec4(textureTest.rgb, 1.0);
 }
