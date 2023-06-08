@@ -11,12 +11,11 @@ uniform mat4 world;
 uniform mat4 view;
 uniform mat4 projection;
 
+
 void main()
 {
     TexCoords = aTexCoords;
+    Normals = normalize(mat3(inverse(transpose(world))) * aNormal);
     FragPos = world * vec4(aPos, 1.0);
     gl_Position = projection * view * FragPos;
-
-    // not the most efficient, but it works
-    Normals = normalize( mat3(inverse(transpose(world)))* aNormal );
 }

@@ -23,7 +23,7 @@ void main()
 	vec3 viewDirection = normalize(worldPosition.rgb - cameraPosition);
 
 	//calculate sun
-	float sun = max(pow(dot(-viewDirection, lightDirection), 128), 0.0);
+	float sun = pow(max(dot(-viewDirection, lightDirection), 0.0), 128);
 
 	vec4 cubeMapColor = texture(cubeMap, viewDirection);
 

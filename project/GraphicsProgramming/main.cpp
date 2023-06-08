@@ -13,6 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include <time.h>
+
 //Variables
 const int HEIGHT = 720;
 const int WIDTH = 1280;
@@ -21,11 +23,13 @@ float lastMouseY;
 bool mousePosInitialized = false;
 float camYaw;
 float camPitch;
-float movementSpeed = 0.1f;
+float movementSpeed = 0.5f;
 bool keyValues[1024];
+double secondsSinceStart;
 
-glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0, 0.0, 0.0));
-glm::vec3 cameraPosition = glm::vec3(0, 0.0, -10.0f);
+glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f));
+glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, -10.0f);
+glm::vec3 sunColor = glm::vec3(1.0f, 1.0f, 0.8f);
 glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(camYaw), 0));
 
 //skybox geometry data:
@@ -65,9 +69,11 @@ GLuint boxNormalTexture;
 GLuint dirtT, sandT, grassT, rockT, snowT;
 GLuint starsCubemap;
 GLuint dayT, nightT, cloudsT, moonT;
+GLuint emptyTexture;
 
 //models
 Model* box;
+Model* weirdCube;
 Model* backpack;
 Model* sphere;
 
@@ -79,7 +85,7 @@ void CreateShaders();
 GLuint CreateProgram(const char* vertexShaderPath, const char* fragmentShaderPath);
 char* ReadFile(const char* filename);
 void CheckShaderCompileStatus(const GLuint& id);
-GLuint LoadTexture(const char* path, int comp = 0);
+GLuint LoadTexture(const char* path, int comp = 0, bool flipVertically = false);
 GLuint LoadCubemap(std::vector<string> paths, int comp = 0);
 void RenderSkybox(const GLuint& program);
 void RenderSkybox(const GLuint& program, const GLuint& cubemap);
@@ -88,7 +94,8 @@ void RenderTerrain();
 void CursorPosCallback(GLFWwindow* window, double xPos, double yPos);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 unsigned int GenerateTerrain(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
-void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>& textures, bool alpha = false);
+void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>* textures = nullptr, bool alpha = false);
+GLuint CreateEmptyTexture();
 //void RenderPlanet(Model* model, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 
 int main()
@@ -97,11 +104,13 @@ int main()
 	const int result = InitWindow(window);
 	if (result != 0) return result;
 
+	time_t start = time(nullptr);
 
-
+	emptyTexture = CreateEmptyTexture();
 	CreateShaders();
 	CreateGeometry(skyboxVAO, skyboxEBO, skyboxMemorySize, skyboxNumofIndeces);
 	CreateGeometry(boxVAO, boxEBO, boxMemorySize, boxNumofIndeces);
+
 
 	glViewport(0, 0, WIDTH, HEIGHT);
 
@@ -120,19 +129,17 @@ int main()
 
 	starsCubemap = LoadCubemap(cubemapPaths);
 
-	stbi_set_flip_vertically_on_load(true);
-
-	//terrainVAO = GenerateTerrain("textures/heightmap.png", heightMapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
-	//heightNormalID = LoadTexture("textures/heightnormal.png");
+	terrainVAO = GenerateTerrain("textures/heightmap.png", heightMapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
+	heightNormalID = LoadTexture("textures/heightnormal.png", 0, true);
 
 	boxTexture = LoadTexture("textures/metalBox.jpg");
 	boxNormalTexture = LoadTexture("textures/metalBoxNormal.png");
 
-	/*dirtT = LoadTexture("textures/dirt.jpg");
+	dirtT = LoadTexture("textures/dirt.jpg");
 	sandT = LoadTexture("textures/sand.jpg");
 	grassT = LoadTexture("textures/grass.png", 4);
 	rockT = LoadTexture("textures/rock.jpg");
-	snowT = LoadTexture("textures/snow.jpg");*/
+	snowT = LoadTexture("textures/snow.jpg");
 
 	dayT = LoadTexture("textures/day.jpg");
 	nightT = LoadTexture("textures/night.jpg");
@@ -149,12 +156,34 @@ int main()
 	std::vector<GLuint> metalBoxTextures =
 	{
 		LoadTexture("textures/metalBox.jpg"),
-		LoadTexture("textures/metalBoxNormal.png")
+		LoadTexture("textures/metalBoxNormal.png"),
+		emptyTexture,
+		emptyTexture,
+		emptyTexture
 	};
 
-	//backpack = new Model("models/backpack/backpack.obj");
+	std::vector<GLuint> backpackTextures =
+	{
+		LoadTexture("models/backpack/diffuse.jpg"),
+		LoadTexture("models/backpack/normal.png"),
+		LoadTexture("models/backpack/specular.jpg"),
+		LoadTexture("models/backpack/ao.jpg"),
+		LoadTexture("models/backpack/roughness.jpg"),
+	};
+
+	const std::vector<GLuint> weirdCubeTextures =
+	{
+		LoadTexture("textures/weirdCube_diffuse.png"),
+		LoadTexture("textures/weirdCube_normal.png"),
+		LoadTexture("textures/weirdCube_roughness.png"),
+		LoadTexture("textures/weirdCube_roughness.png"),
+		LoadTexture("textures/weirdCube_ao.png"),
+	};
+
+	backpack = new Model("models/backpack/backpack.obj");
 	sphere = new Model("models/planets/uv_sphere.obj");
-	box = new Model("models/box/box.obj");
+	box = new Model("models/box/box.fbx");
+	weirdCube = new Model("models/weird cube/weirdCube.fbx");
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -164,22 +193,19 @@ int main()
 		//poll events
 		glfwPollEvents();
 
+		secondsSinceStart = difftime(time(nullptr), start);
+
 		//render background color
 		glClearColor(0.0, 0.0, 0.0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		/*TODO: WAAROM HEB IK 2 ZONNEN?
-		 *TODO: HOE KAN IK CORRECT EEN MODEL INLADEN MET GOEDE TEX COORDS?
-		 *TODO: WAT MOET JE PRECIES AF HEBBEN VAN DE HUISWERK OPDRACHTEN?
-		*/
-
 		RenderSkybox(skyboxProgram);
 		//RenderBox();
 		//RenderSkybox(starProgram, starsCubemap);
-		RenderModel(box, glm::vec3(100, 100, 100), glm::vec3(0, 0, 0), glm::vec3(100, 100, 100), simpleProgram, metalBoxTextures);
+		RenderModel(weirdCube, glm::vec3(0, 0, 0), glm::vec3(0, 45, 0), glm::vec3(10, 10, 10), modelProgram, &weirdCubeTextures);
 		//RenderModel(sphere, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), glm::vec3(100, 100, 100), planetProgram, earthTextures);
-		//RenderTerrain();
-		//RenderModel(backpack, glm::vec3(100, 100, 100), glm::vec3(0, 0, 0), glm::vec3(10, 10, 10));
+		RenderTerrain();
+		//RenderModel(backpack, glm::vec3(100, 100, 100), glm::vec3(0, -90.0f, 0), glm::vec3(100, 100, 100), modelProgram);
 
 		//swap buffers
 		glfwSwapBuffers(window);
@@ -225,32 +251,32 @@ void CreateGeometry(GLuint& vao, GLuint& ebo, int& size, int& numOfindices)
 {
 	// need 24 vertices for normal/uv-mapped Cube
 	float vertices[] = {
-		// positions            //colors            // tex coords   // normals          //tangents      //bitangents
-		0.5f, -0.5f, -0.5f,     1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
-		0.5f, -0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
-		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   0.f, 0.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
-		-0.5f, -0.5f, -.5f,     1.0f, 1.0f, 1.0f,   0.f, 1.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
+		// positions            //colors            // tex coords   // normals          //tangents			//bitangents
+		0.5f, -0.5f, -0.5f,     1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,		0.f, 0.f, 1.f,
+		0.5f, -0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,		0.f, 0.f, 1.f,
+		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   0.f, 0.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,		0.f, 0.f, 1.f,
+		-0.5f, -0.5f, -.5f,     1.0f, 1.0f, 1.0f,   0.f, 1.f,       0.f, -1.f, 0.f,     -1.f, 0.f, 0.f,		 0.f, 0.f, 1.f,
 
-		0.5f, 0.5f, -0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       1.f, 0.f, 0.f,     0.f, -1.f, 0.f,  0.f, 0.f, 1.f,
-		0.5f, 0.5f, 0.5f,       1.0f, 1.0f, 1.0f,   1.f, 0.f,       1.f, 0.f, 0.f,     0.f, -1.f, 0.f,  0.f, 0.f, 1.f,
+		0.5f, 0.5f, -0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       1.f, 0.f, 0.f,     0.f, -1.f, 0.f,		0.f, 0.f, 1.f,
+		0.5f, 0.5f, 0.5f,       1.0f, 1.0f, 1.0f,   1.f, 0.f,       1.f, 0.f, 0.f,     0.f, -1.f, 0.f,		0.f, 0.f, 1.f,
 
-		0.5f, 0.5f, 0.5f,       1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,  0.f, -1.f, 0.f,
-		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   0.f, 0.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,  0.f, -1.f, 0.f,
+		0.5f, 0.5f, 0.5f,       1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,		0.f, -1.f, 0.f,
+		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   0.f, 0.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,		0.f, -1.f, 0.f,
 
-		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   0.f, 0.f,      -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,  0.f, 0.f, 1.f,
-		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   0.f, 1.f,      -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,  0.f, 0.f, 1.f,
+		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   0.f, 0.f,      -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,		0.f, 0.f, 1.f,
+		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   0.f, 1.f,      -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,		0.f, 0.f, 1.f,
 
-		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   0.f, 1.f,      0.f, 0.f, -1.f,     1.f, 0.f, 0.f,  0.f, 1.f, 0.f,
-		0.5f, 0.5f, -0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,      0.f, 0.f, -1.f,     1.f, 0.f, 0.f,  0.f, 1.f, 0.f,
+		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   0.f, 1.f,      0.f, 0.f, -1.f,     1.f, 0.f, 0.f,		 0.f, 1.f, 0.f,
+		0.5f, 0.5f, -0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,      0.f, 0.f, -1.f,     1.f, 0.f, 0.f,		0.f, 1.f, 0.f,
 
-		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, 1.f, 0.f,     1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
-		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, 1.f, 0.f,     1.f, 0.f, 0.f,  0.f, 0.f, 1.f,
+		-0.5f, 0.5f, -.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, 1.f, 0.f,     1.f, 0.f, 0.f,		0.f, 0.f, 1.f,
+		-0.5f, 0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, 1.f, 0.f,     1.f, 0.f, 0.f,		0.f, 0.f, 1.f,
 
-		0.5f, -0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,  0.f, -1.f, 0.f,
-		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   0.f, 1.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,  0.f, -1.f, 0.f,
+		0.5f, -0.5f, 0.5f,      1.0f, 1.0f, 1.0f,   1.f, 1.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,		0.f, -1.f, 0.f,
+		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   0.f, 1.f,       0.f, 0.f, 1.f,     1.f, 0.f, 0.f,		0.f, -1.f, 0.f,
 
-		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   1.f, 0.f,       -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,  0.f, 0.f, 1.f,
-		-0.5f, -0.5f, -.5f,     1.0f, 1.0f, 1.0f,   1.f, 1.f,       -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,  0.f, 0.f, 1.f,
+		-0.5f, -0.5f, 0.5f,     1.0f, 1.0f, 1.0f,   1.f, 0.f,       -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,		 0.f, 0.f, 1.f,
+		-0.5f, -0.5f, -.5f,     1.0f, 1.0f, 1.0f,   1.f, 1.f,       -1.f, 0.f, 0.f,     0.f, 1.f, 0.f,		0.f, 0.f, 1.f,
 
 		-0.5f, -0.5f, -.5f,     1.0f, 1.0f, 1.0f,   0.f, 0.f,       0.f, 0.f, -1.f,     1.f, 0.f, 0.f,  0.f, 1.f, 0.f,
 		0.5f, -0.5f, -0.5f,     1.0f, 1.0f, 1.0f,   1.f, 0.f,       0.f, 0.f, -1.f,     1.f, 0.f, 0.f,  0.f, 1.f, 0.f,
@@ -346,6 +372,7 @@ void RenderSkybox(const GLuint& program)
 
 	glUniform3fv(glGetUniformLocation(program, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform3fv(glGetUniformLocation(program, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	glUniform3fv(glGetUniformLocation(program, "sunColor"), 1, glm::value_ptr(sunColor));
 
 	glBindVertexArray(skyboxVAO);
 	glDrawElements(GL_TRIANGLES, skyboxNumofIndeces, GL_UNSIGNED_INT, 0);
@@ -407,6 +434,7 @@ void RenderTerrain()
 
 	glUniform3fv(glGetUniformLocation(terrainProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform3fv(glGetUniformLocation(terrainProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	glUniform3fv(glGetUniformLocation(terrainProgram, "sunColor"), 1, glm::value_ptr(sunColor));
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, heightmapID);
@@ -453,8 +481,8 @@ void CreateShaders()
 	modelProgram = CreateProgram("shaders/modelVertex.shader", "shaders/modelFragment.shader");
 	glUseProgram(modelProgram);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_diffuse1"), 0);
-	glUniform1i(glGetUniformLocation(modelProgram, "texture_specular1"), 1);
-	glUniform1i(glGetUniformLocation(modelProgram, "texture_normal1"), 2);
+	glUniform1i(glGetUniformLocation(modelProgram, "texture_normal1"), 1);
+	glUniform1i(glGetUniformLocation(modelProgram, "texture_specular1"), 2);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_roughness1"), 3);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_ao1"), 4);
 
@@ -543,8 +571,10 @@ GLuint CreateProgram(const char* vertexShaderPath, const char* fragmentShaderPat
 	return programID;
 }
 
-GLuint LoadTexture(const char* path, const int comp)
+GLuint LoadTexture(const char* path, const int comp, const bool flipVertically)
 {
+	stbi_set_flip_vertically_on_load(flipVertically);
+
 	GLuint toReturn;
 	glGenTextures(1, &toReturn);
 	glBindTexture(GL_TEXTURE_2D, toReturn);
@@ -575,6 +605,20 @@ GLuint LoadTexture(const char* path, const int comp)
 
 	stbi_image_free(data);
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_set_flip_vertically_on_load(false);
+
+	return toReturn;
+}
+
+GLuint CreateEmptyTexture()
+{
+	GLuint toReturn;
+	const GLubyte texData[] = { 255, 255, 255, 255 };
+
+	glGenTextures(1, &toReturn);
+	glBindTexture(GL_TEXTURE_2D, toReturn);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
 
 	return toReturn;
 }
@@ -709,6 +753,8 @@ void ProcessInput(GLFWwindow*& window)
 
 unsigned int GenerateTerrain(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	int width, height, channels;
 	data = nullptr;
 
@@ -809,10 +855,12 @@ unsigned int GenerateTerrain(const char* heightmap, unsigned char*& data, GLenum
 	delete[] vertices;
 	delete[] indices;
 
+	stbi_set_flip_vertically_on_load(false);
+
 	return VAO;
 }
 
-void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>& textures, bool alpha)
+void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotation, const glm::vec3 scale, const GLuint program, const std::vector<GLuint>* textures, bool alpha)
 {
 	if (alpha)
 	{
@@ -847,13 +895,20 @@ void RenderModel(Model* model, const glm::vec3 position, const glm::vec3 rotatio
 	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
 	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
+	float offset = secondsSinceStart * 0.01f;
+	glUniform1f(glGetUniformLocation(program, "offset"), offset);
+
 	glUniform3fv(glGetUniformLocation(program, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform3fv(glGetUniformLocation(program, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+	glUniform3fv(glGetUniformLocation(program, "sunColor"), 1, glm::value_ptr(sunColor));
 
-	for (int i = 0; i < textures.size(); i++)
+	if (textures != nullptr)
 	{
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, textures.at(i));
+		for (int i = 0; i < textures->size(); i++)
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, textures->at(i));
+		}
 	}
 
 	model->Draw(program);

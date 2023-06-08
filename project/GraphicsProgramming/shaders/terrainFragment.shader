@@ -10,6 +10,7 @@ uniform sampler2D dirtTex, sandTex, grassTex, rockTex, snowTex;
 
 uniform vec3 lightDirection;
 uniform vec3 cameraPosition;
+uniform vec3 sunColor;
 
 vec3 lerp3(vec3 a, vec3 b, float t)
 {
@@ -54,7 +55,7 @@ void main()
 	float fog = pow(clamp((distanceToCam - 250) / 1000, 0, 1), 2);
 	vec3 skyTopColor = vec3(68.0 / 255.0, 118.0 / 255.0, 189.0 / 255.0);
 	vec3 skyBottomColor = vec3(188.0 / 255.0, 214.0 / 255.0, 231.0 / 255.0);
-	vec3 fogColor = lerp3(skyBottomColor, skyTopColor, max(viewDirection.y, 0.0));
+	vec3 fogColor = lerp3(skyBottomColor * sunColor, skyTopColor * sunColor, max(viewDirection.y, 0.0));
 
 	//seperate RGB for A
 	vec4 shaderOutput = vec4( lerp3(diffuse * min(lightValue + 0.2, 1.0), fogColor, fog), 1.0);
