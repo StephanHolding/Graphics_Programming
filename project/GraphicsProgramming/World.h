@@ -15,4 +15,3 @@ public:
 	glm::vec3 sunColor;
 
 };
-

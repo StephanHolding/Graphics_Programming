@@ -2,18 +2,18 @@
 #include "Terrain.h"
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Loader.h"
+#include "ImageLoader.h"
 #include "stb_image.h"
 
 Terrain::Terrain(const std::string& name, const GLuint programID, const char* heightMapPath, const char* normalMapPath, const std::vector<const char*> terrainTexturePaths): Actor(name)
 {
 	this->terrainProgram = programID;
 	terrainVAO = GenerateTerrain(heightMapPath, heightMapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
-	heightNormalID = Loader::LoadTexture(normalMapPath , 0, true);
+	heightNormalID = ImageLoader::LoadTexture(normalMapPath , 0, true);
 
 	for (int i = 0; i < terrainTexturePaths.size(); i++)
 	{
-		GLuint newTexture = Loader::LoadTexture(terrainTexturePaths.at(i));
+		GLuint newTexture = ImageLoader::LoadTexture(terrainTexturePaths.at(i));
 		terrainTextureIDs.push_back(newTexture);
 	}
 }

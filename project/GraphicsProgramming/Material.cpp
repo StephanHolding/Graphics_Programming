@@ -1,11 +1,11 @@
 #include "Material.h"
-#include "Loader.h"
+#include "ImageLoader.h"
 
 
 Material::Material(const char* diffusePath, const char* normalPath, const char* specularPath,
                    const char* roughnessPath, const char* aoPath)
 {
-	this->emptyTex = Loader::CreateEmptyTexture();
+	this->emptyTex = ImageLoader::CreateEmptyTexture();
 	this->useAlpha = false;
 	this->diffuseColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	this->normalStrength = 1.0f;
@@ -32,7 +32,7 @@ void Material::BindTextures() const
 GLuint Material::EmptyPathCheck(const char* path) const
 {
 	if (path != "")
-		return Loader::LoadTexture(path);
+		return ImageLoader::LoadTexture(path);
 	else
 		return emptyTex;
 }

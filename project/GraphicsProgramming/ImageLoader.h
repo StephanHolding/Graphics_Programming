@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 
-class Loader
+class ImageLoader
 {
 public:
 	static GLuint LoadTexture(const char* path, int comp = 0, bool flipVertically = false);

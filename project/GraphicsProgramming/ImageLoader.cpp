@@ -1,9 +1,9 @@
-#include "Loader.h"
+#include "ImageLoader.h"
 
 #include "stb_image.h"
 //#define STB_IMAGE_IMPLEMENTATION
 
-GLuint Loader::LoadTexture(const char* path, const int comp, const bool flipVertically)
+GLuint ImageLoader::LoadTexture(const char* path, const int comp, const bool flipVertically)
 {
 	stbi_set_flip_vertically_on_load(flipVertically);
 
@@ -43,7 +43,7 @@ GLuint Loader::LoadTexture(const char* path, const int comp, const bool flipVert
 	return toReturn;
 }
 
-GLuint Loader::LoadCubemap(const std::vector<std::string> paths, const int comp)
+GLuint ImageLoader::LoadCubemap(const std::vector<std::string> paths, const int comp)
 {
 	GLuint toReturn;
 	glGenTextures(1, &toReturn);
@@ -89,7 +89,7 @@ GLuint Loader::LoadCubemap(const std::vector<std::string> paths, const int comp)
 	return toReturn;
 }
 
-GLuint Loader::CreateEmptyTexture()
+GLuint ImageLoader::CreateEmptyTexture()
 {
 	GLuint toReturn;
 	constexpr GLubyte texData[] = { 255, 255, 255, 255 };

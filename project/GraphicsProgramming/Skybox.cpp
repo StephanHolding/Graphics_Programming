@@ -1,7 +1,7 @@
 #include "Skybox.h"
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Loader.h"
+#include "ImageLoader.h"
 
 Skybox::Skybox(GLuint programID)
 {
@@ -13,7 +13,7 @@ Skybox::Skybox(GLuint programID, const std::vector<std::string>& cubemapPaths)
 {
 	this->programID = programID;
 	CreateSkyboxGeometry();
-	cubemap = Loader::LoadCubemap(cubemapPaths);
+	cubemap = ImageLoader::LoadCubemap(cubemapPaths);
 }
 
 void Skybox::CreateSkyboxGeometry()

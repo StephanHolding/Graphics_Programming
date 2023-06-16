@@ -138,20 +138,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
-    <ClCompile Include="Loader.cpp" />
+    <ClCompile Include="Framebuffer.cpp" />
+    <ClCompile Include="ImageLoader.cpp" />
     <ClCompile Include="ModelActor.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="Skybox.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragment.shader" />
+    <None Include="shaders\hdrFragment.shader" />
+    <None Include="shaders\inverseImageFragment.shader" />
     <None Include="shaders\modelFragment.shader" />
     <None Include="shaders\modelVertex.shader" />
     <None Include="shaders\planetFragment.shader" />
+    <None Include="shaders\imageFragment.shader" />
+    <None Include="shaders\imageVertex.shader" />
     <None Include="shaders\skyboxFragment.shader" />
     <None Include="shaders\skyboxVertex.shader" />
     <None Include="shaders\starFragment.shader" />
@@ -161,11 +167,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
-    <ClInclude Include="Loader.h" />
+    <ClInclude Include="Framebuffer.h" />
+    <ClInclude Include="ImageLoader.h" />
     <ClInclude Include="ModelActor.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
+    <ClInclude Include="Shaders.h" />
     <ClInclude Include="Skybox.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Terrain.h" />
